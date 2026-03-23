@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fedex-table-extractor"
+version = "1.0.0"
+description = "Extract FedEx rate tables from PDF into SQLite using LangChain + LLM"
+requires-python = ">=3.11"
+dependencies = [
+    "pdfplumber>=0.11",
+    "langchain-core>=0.3",
+    "langchain-anthropic>=0.3",
+    "langchain-openai>=0.2",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "tenacity>=9.0",
+    "click>=8.0",
+    "structlog>=24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-mock>=3.14",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
