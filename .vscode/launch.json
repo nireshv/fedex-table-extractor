@@ -1,0 +1,77 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "extract: single page",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.main",
+            "args": ["extract", "--pages", "82"],
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "extract: page range (parallel)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.main",
+            "args": ["extract", "--pages", "39-40", "--mode", "parallel"],
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "stats",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.main",
+            "args": ["stats"],
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "query",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.main",
+            "args": ["query", "--service", "FedEx Priority Overnight", "--zone", "5", "--weight", "10"],
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "inspect: page 13",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "src.main",
+            "args": ["inspect", "--page", "13"],
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "pytest: all tests",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": ["-v"],
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "pytest: current test file",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": ["-v", "${file}"],
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env",
+            "console": "integratedTerminal"
+        }
+    ]
+}

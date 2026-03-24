@@ -17,6 +17,7 @@ TableType = Literal[
     "us_package",           # US domestic package rates (zones 2–8)
     "us_express_freight",   # US domestic freight per-pound rates (zones 2–16)
     "us_multiweight",       # US express multiweight per-lb bulk rates
+    "us_one_rate",          # FedEx One Rate® flat pricing by package type (no weight scale)
     "sameday",              # FedEx SameDay® — no zone, weight-only pricing
     "intl_package_export",  # International package US export (zones A–O)
     "intl_package_import",  # International package US import (zones A–O)
@@ -297,6 +298,13 @@ class ServiceInfo(BaseModel):
     delivery_commitment: Optional[str] = Field(
         default=None,
         description="Delivery time as printed, e.g. 'Next day by 10:30 a.m. or 11 a.m.'",
+    )
+    package_type: Optional[str] = Field(
+        default=None,
+        description=(
+            "Package type for tables where each sub-table covers a single packaging variant, "
+            "e.g. 'FedEx 10kg Box', 'FedEx 25kg Box'. NULL for most tables."
+        ),
     )
 
 

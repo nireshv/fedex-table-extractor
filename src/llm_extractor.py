@@ -74,6 +74,7 @@ table_type: Choose the most specific matching type:
   - "us_package"          → US domestic rates by zone (2–8), services like FedEx Priority Overnight
   - "us_express_freight"  → US domestic freight rates (per pound, zones 2–16), services like FedEx First Overnight Freight
   - "us_multiweight"      → Express Multiweight per-pound bulk rates (100 lbs+)
+  - "us_one_rate"         → FedEx One Rate® flat pricing by package type (Envelope, Pak, Small Box, etc.) — no weight scale, zones 2/3-4/5-8
   - "sameday"             → FedEx SameDay / Next Flight Out (no zone)
   - "intl_package_export" → International package rates from US (zones A–O, Puerto Rico, etc.)
   - "intl_package_import" → International package rates to US (zones A–O)
@@ -116,45 +117,46 @@ Set confidence="low" when table structure is garbled or values are uncertain.
 """
 
 CLASSIFICATION_PROMPT = """\
-You are a FedEx Service Guide analyst. Your task is to classify a single PDF page
-and identify the structure of any rate table it contains.
+Classify this FedEx Service Guide page. Return structure metadata only — no rate values.
 
-You do NOT need to extract individual rate values — a separate program handles that.
-You only need to answer: what kind of table is on this page, and what are the column headers?
+Set skipped=true if the page has no weight-based rate table (zone charts, fee pages, T&C, cover, checkmark grids).
 
-=== WHAT TO RETURN ===
+For rate table pages return:
+- table_type: one of us_package, us_express_freight, us_multiweight, sameday,
+  intl_package_export, intl_package_import, intl_premium, ground_domestic, ground_ak_hi, ground_canada
+- direction: domestic / us_export / us_import
+- zone: as printed (e.g. "2", "A", "17"); null only for sameday
+- services: service name columns left-to-right, exact names, include delivery_commitment if shown
+- has_envelope_row: true if FedEx Envelope is a separate row
+- has_pak_row: true if FedEx Pak is a separate row
 
-skipped=true for pages with NO weight-based rate tables:
-  - Zone charts / zone lookup tables (country → zone number)
-  - Fee description pages (address correction, fuel surcharge, etc.)
-  - Terms and Conditions, cover pages, table of contents, instructional text
-  - Service applicability matrices (checkmark grids)
+table_type guide:
+  us_package          US domestic package, zones 2–8
+  us_express_freight  US domestic freight per-lb, zones 2–16
+  us_multiweight      Express Multiweight per-lb bulk (100 lbs+)
+  us_one_rate         FedEx One Rate® flat pricing by package type (Envelope/Pak/Box/Tube), zones 2/3-4/5-8
+  sameday             FedEx SameDay / NFO, no zone
+  intl_package_export Intl package US export, zones A–O
+  intl_package_import Intl package US import, zones A–O
+  intl_premium        Intl Premium freight
+  ground_domestic     FedEx Ground / Home Delivery, zones 2–8
+  ground_ak_hi        Ground Alaska / Hawaii
+  ground_canada       Intl Ground Canada, zones 51/54
 
-For pages WITH a rate table, return:
-  - table_type: the best matching type from the allowed values
-  - direction: "domestic" / "us_export" / "us_import"
-  - zone: zone identifier as printed (e.g. "2", "A", "17"). NULL only for sameday.
-  - services: list of service columns in left-to-right order, with exact service names and delivery commitments
-  - has_envelope_row: true if FedEx Envelope appears as a separate row
-  - has_pak_row: true if FedEx Pak appears as a separate row
-
-=== TABLE TYPE VALUES ===
-  "us_package"          → US domestic package rates by zone (2–8)
-  "us_express_freight"  → US domestic freight rates per pound (zones 2–16)
-  "us_multiweight"      → Express Multiweight per-pound bulk rates
-  "sameday"             → FedEx SameDay / Next Flight Out (no zone)
-  "intl_package_export" → International package rates from US (zones A–O, Puerto Rico, etc.)
-  "intl_package_import" → International package rates to US (zones A–O)
-  "intl_premium"        → FedEx International Premium freight
-  "ground_domestic"     → FedEx Ground / Home Delivery (zones 2–8)
-  "ground_ak_hi"        → FedEx Ground Alaska or Hawaii
-  "ground_canada"       → FedEx International Ground Canada (zones 51, 54)
-
-=== SERVICES ===
-List ONLY the actual service name columns — not the weight/zone column.
-Use exact FedEx service names (e.g. "FedEx Priority Overnight", "FedEx 2Day A.M.").
-Include the delivery_commitment text if it appears above the service name in the table.
-Order them left-to-right as they appear in the table.
+services:
+  - For pages where service names are COLUMN headers (e.g., us_package zone tables):
+    list service name columns left-to-right.
+  - For us_express_freight and us_multiweight pages: zones (2, 3, 4, …) are the column
+    headers; each table represents ONE freight service. List services in table order
+    (top to bottom), one per table. Service names appear as text above each table
+    (e.g., "FedEx First Overnight® Freight", "FedEx 1Day® Freight").
+  - For intl_package_export / intl_package_import box-rate pages (10kg Box / 25kg Box):
+    zones A–O are column headers; each table represents ONE service + ONE package type.
+    List services in table order (top to bottom), one per table.
+    Set package_type in each ServiceInfo entry (e.g., "FedEx 10kg Box", "FedEx 25kg Box").
+    The service name and package type appear as a header above each table, e.g.
+    "FedEx International Priority Express: FedEx 10kg Box".
+  - Use exact FedEx names only — no weight or zone column labels.
 """
 
 
@@ -434,8 +436,15 @@ def _build_messages(page_content: str) -> list[Any]:
 
 
 def _build_classification_messages(page_content: str) -> list[Any]:
-    """Build the message list for the classification (hybrid) call."""
+    """Build the message list for the classification (hybrid) call.
+
+    Classification only needs table headers and the first few rows — not all data rows.
+    Truncating to 2 000 chars covers the page title, zone label, and service column headers
+    while cutting ~85 % of a typical rate-table page's tokens.
+    """
+    _CLASSIFICATION_MAX_CHARS = 2_000
+    truncated = page_content[:_CLASSIFICATION_MAX_CHARS]
     return [
         SystemMessage(content=CLASSIFICATION_PROMPT),
-        HumanMessage(content=page_content),
+        HumanMessage(content=truncated),
     ]

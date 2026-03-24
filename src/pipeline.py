@@ -212,7 +212,7 @@ async def _run_parallel(
                 return
 
             try:
-                rates = parse_table(content.tables, classification, page_num)
+                rates = parse_table(content.tables, classification, page_num, page_text=content.text)
                 extraction = PageExtraction(rates=rates)
             except Exception as exc:
                 msg = f"Table parsing failed: {exc}"
@@ -302,7 +302,7 @@ async def _process_page(
         return PageResult(page_number=page_num, rows_inserted=0, skipped=True, failed=False)
 
     try:
-        rates = parse_table(content.tables, classification, page_num)
+        rates = parse_table(content.tables, classification, page_num, page_text=content.text)
     except Exception as exc:
         msg = f"Table parsing failed: {exc}"
         logger.error("Table parsing error", extra={"page": page_num, "error": msg})
