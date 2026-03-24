@@ -20,30 +20,6 @@ from src.models import PageClassification, RateEntry, TableType
 
 logger = logging.getLogger(__name__)
 
-# Known FedEx service name substrings for fuzzy column matching
-_SERVICE_KEYWORDS = [
-    "first overnight",
-    "priority overnight",
-    "standard overnight",
-    "2day a.m.",
-    "2day am",
-    "2day",
-    "express saver",
-    "sameday",
-    "international priority express",
-    "international priority",
-    "international economy",
-    "international first",
-    "ground",
-    "home delivery",
-    "international ground",
-    "first overnight freight",
-    "priority overnight freight",
-    "2day freight",
-    "express freight",
-]
-
-
 def _clean_cell(value: object) -> str:
     """Return a stripped string from a cell value, empty string if None."""
     if value is None:
